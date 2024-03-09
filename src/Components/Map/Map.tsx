@@ -8,8 +8,6 @@ import OSM from 'ol/source/OSM';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { fromLonLat } from 'ol/proj';
-import { Feature } from 'ol';
-import { Point, LineString, Polygon } from 'ol/geom';
 import { Draw } from 'ol/interaction';
 import './map1.css'; // Import the CSS file
 import Geocoder from 'ol-geocoder';
@@ -56,12 +54,24 @@ const MapComponent: React.FC = () => {
     map.addControl(geocoder);
 
     // Add draw interactions for drawing features
-    const drawInteraction = new Draw({
+    const drawPoint = new Draw({
       source: vectorSource,
-      type: 'Point', // Default to point drawing
+      type: 'Point',
     });
 
-    map.addInteraction(drawInteraction);
+    const drawLine = new Draw({
+      source: vectorSource,
+      type: 'LineString',
+    });
+
+    const drawPolygon = new Draw({
+      source: vectorSource,
+      type: 'Polygon',
+    });
+
+    map.addInteraction(drawPoint);
+    map.addInteraction(drawLine);
+    map.addInteraction(drawPolygon);
 
     setMapInstance(map);
 
