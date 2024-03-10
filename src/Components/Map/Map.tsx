@@ -1,40 +1,25 @@
 "use client"
 import React, { useEffect, useRef, useState } from 'react';
-import 'ol/ol.css'; // Import OpenLayers CSS
-import Map from 'ol/Map'; // Import Map component from OpenLayers
-import View from 'ol/View'; // Import View component from OpenLayers
-import TileLayer from 'ol/layer/Tile'; // Import TileLayer component from OpenLayers
-import OSM from 'ol/source/OSM'; // Import OSM source component from OpenLayers
-import VectorLayer from 'ol/layer/Vector'; // Import VectorLayer component from OpenLayers
-import VectorSource from 'ol/source/Vector'; // Import VectorSource component from OpenLayers
-import { fromLonLat } from 'ol/proj'; // Import fromLonLat function from OpenLayers
-import { Draw } from 'ol/interaction'; // Import Draw interaction component from OpenLayers
-import './map1.css'; // Import custom CSS file
-import Geocoder from 'ol-geocoder'; // Import Geocoder component from ol-geocoder
+import 'ol/ol.css';
+import Map from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import OSM from 'ol/source/OSM';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import { fromLonLat } from 'ol/proj';
+import { Draw } from 'ol/interaction';
+import './map1.css'; // Import the CSS file
+import Geocoder from 'ol-geocoder';
 
-// Index:
-// 1. Component Declaration and Initialization
-// 2. Map Initialization and Configuration
-// 3. Geocoder Configuration
-// 4. Draw Interaction Configuration
-// 5. Toggle Fullscreen Function
-// 6. Zoom Handlers
-// 7. Distance Calculation Function
-// 8. Render JSX
-
-// 1. Component Declaration and Initialization
 const MapComponent: React.FC = () => {
-  // References
   const mapRef = useRef<HTMLDivElement>(null);
-
-  // State variables
   const [isFullscreen, setIsFullscreen] = useState(true);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const vectorSource = new VectorSource();
   const vectorLayer = new VectorLayer({ source: vectorSource });
 
-  // 2. Map Initialization and Configuration
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -52,7 +37,6 @@ const MapComponent: React.FC = () => {
       }),
     });
 
-    // 3. Geocoder Configuration
     const geocoder = new Geocoder('nominatim', {
       provider: 'osm',
       lang: 'en',
@@ -69,13 +53,24 @@ const MapComponent: React.FC = () => {
 
     map.addControl(geocoder);
 
-    // 4. Draw Interaction Configuration
     const drawPoint = new Draw({
       source: vectorSource,
       type: 'Point',
     });
 
+    const drawLine = new Draw({
+      source: vectorSource,
+      type: 'LineString',
+    });
+
+    const drawPolygon = new Draw({
+      source: vectorSource,
+      type: 'Polygon',
+    });
+
     map.addInteraction(drawPoint);
+    map.addInteraction(drawLine);
+    map.addInteraction(drawPolygon);
 
     setMapInstance(map);
 
@@ -84,7 +79,6 @@ const MapComponent: React.FC = () => {
     };
   }, []);
 
-  // 5. Toggle Fullscreen Function
   const toggleFullscreen = () => {
     const mapContainer = mapRef.current;
     if (mapContainer) {
@@ -93,7 +87,6 @@ const MapComponent: React.FC = () => {
     }
   };
 
-  // 6. Zoom Handlers
   const handleZoomIn = () => {
     if (mapInstance) {
       const view = mapInstance.getView();
@@ -110,31 +103,40 @@ const MapComponent: React.FC = () => {
     }
   };
 
-  // 7. Distance Calculation Function
-  const calculateDistance = () => {
+  const calculateMeasurement = () => {
     const features = vectorSource.getFeatures();
 
-    if (features.length < 2) {
-      alert('Please draw at least two points to calculate distance.');
+    if (features.length === 0) {
+      alert('Please draw a feature to calculate measurements.');
       return;
     }
 
-    let totalDistance = 0;
+    let totalMeasurement = 0;
 
-    for (let i = 0; i < features.length - 1; i++) {
-      const coords1 = features[i].getGeometry().getCoordinates();
-      const coords2 = features[i + 1].getGeometry().getCoordinates();
-      const distanceInMeters = getDistance(coords1, coords2);
-      totalDistance += distanceInMeters;
-    }
+    features.forEach((feature) => {
+      const geometry = feature.getGeometry();
+      let measurement;
+      if (geometry.getType() === 'Polygon') {
+        // Calculate area for polygon features
+        measurement = geometry.getArea();
+      } else if (geometry.getType() === 'LineString') {
+        // Calculate length for line features
+        measurement = geometry.getLength();
+      }
+      totalMeasurement += measurement;
+    });
 
-    const totalDistanceInKm = totalDistance / 1000;
-    setDistance(totalDistanceInKm);
+    // Convert total measurement to appropriate unit
+    const unit = features[0].getGeometry().getType() === 'Polygon' ? 'square meters' : 'meters';
+    const totalMeasurementFormatted = totalMeasurement.toLocaleString();
 
-    alert(`Total Distance: ${totalDistanceInKm.toFixed(2)} km`);
+    // Update state with the total measurement
+    setDistance(totalMeasurement);
+
+    // Display the measurement in a pop-up message
+    alert(`Total Measurement: ${totalMeasurementFormatted} ${unit}`);
   };
 
-  // 8. Render JSX
   return (
     <div>
       <div ref={mapRef} className={`map-container ${isFullscreen ? 'fullscreen-map' : ''}`} />
@@ -146,8 +148,8 @@ const MapComponent: React.FC = () => {
         <button onClick={handleZoomOut}>-</button>
       </div>
       <div>
-        {distance !== null && <p>Distance: {distance.toFixed(2)} km</p>}
-        <button onClick={calculateDistance}>Calculate Distance</button>
+        {distance !== null && <p>Measurement: {distance.toLocaleString()} meters</p>}
+        <button onClick={calculateMeasurement}>Calculate Measurement</button>
       </div>
     </div>
   );
