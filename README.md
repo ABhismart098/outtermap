@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+Documentation: MapComponent
+Index
+Overview
+Dependencies
+State Variables
+Effect Hook: Map Initialization
+Geocoder Configuration
+Draw Interaction Configuration
+Function: toggleFullscreen
+Function: handleZoomIn
+Function: handleZoomOut
+Function: calculateMeasurement
+Render Method
+1. Overview
+The MapComponent is a React functional component that renders an OpenLayers map with various functionalities such as drawing points, lines, and polygons, geocoding, toggling fullscreen mode, zooming in/out, and calculating measurements.
 
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+2. Dependencies
+OpenLayers: A JavaScript library for displaying map data in web browsers.
+ol-geocoder: An OpenLayers plugin for geocoding functionality.
+3. State Variables
+isFullscreen: A boolean state variable to track whether the map is in fullscreen mode or not.
+mapInstance: A state variable to hold the reference to the OpenLayers Map instance.
+distance: A state variable to store the calculated measurement.
+4. Effect Hook: Map Initialization
+Initializes the OpenLayers Map instance and sets up layers, view, geocoding functionality, and draw interactions.
+Cleans up by removing the map target when the component unmounts.
+5. Geocoder Configuration
+Configures the geocoder plugin for searching places on the map.
+6. Draw Interaction Configuration
+Sets up draw interactions for drawing points, lines, and polygons on the map.
+7. Function: toggleFullscreen
+Toggles the fullscreen mode of the map by adding/removing a CSS class to the map container.
+8. Function: handleZoomIn
+Zooms in on the map when called.
+9. Function: handleZoomOut
+Zooms out on the map when called.
+10. Function: calculateMeasurement
+Calculates the total measurement (area for polygons, length for lines) of drawn features on the map.
+Updates the distance state variable with the calculated measurement.
+Displays the measurement in a popup message.
+11. Render Method
+Renders the map container, fullscreen button, zoom buttons, measurement display, and calculate measurement button.
+This documentation provides a comprehensive overview of the MapComponent and its functionalities, making it easier for developers to understand and work with the code.
