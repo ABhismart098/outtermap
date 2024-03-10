@@ -1,5 +1,19 @@
 /* mapComponent.css */
 
+.search-bar {
+  position: top;
+  top: 20px; /* Adjust the top position to move it closer to the top of the screen */
+  right: 10px;
+  width: 200px;
+  height: 30px;
+  margin-top: 10px;
+  border-radius: 15px;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 0 10px;
+}
+
 /* Map container */
 .map-container {
   width: 100%;
@@ -9,20 +23,7 @@
 }
 
 /* Search bar */
-.search-bar {
-  position: absolute;
-  top: 10px; /* Adjust the top position as needed */
-  right: 10px; /* Adjust the right position to move it to the upper right corner */
-  width: 200px; /* Set a fixed width for the search bar */
-  height: 30px; /* Adjust the height of the search bar */
-  margin-top: 10px;
-  border-radius: absolutely;
-  background-color: #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  border-radius: 15px; /* Set the border radius to create rounded corners */
-  padding: 0 10px; /* Add padding for the search input */
-}
+
 
 /* Fullscreen mode */
 .fullscreen-map {
