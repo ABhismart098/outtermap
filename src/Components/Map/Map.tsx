@@ -5,6 +5,7 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
+import {getLength, getArea} from 'ol/sphere';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { fromLonLat } from 'ol/proj';
@@ -12,13 +13,21 @@ import { Draw } from 'ol/interaction';
 import './map1.css'; // Import the CSS file
 import Geocoder from 'ol-geocoder';
 
+interface AddressChosenEvent {
+  coordinate: [number, number];
+  // Add other properties that you expect to use from the event
+} 
+interface CurrentZoomEvent{ 
+  
+}
+
 const MapComponent: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(true);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
-  const vectorSource = new VectorSource();
-  const vectorLayer = new VectorLayer({ source: vectorSource });
+  const vectorSource = useRef<VectorSource>(new VectorSource());
+  const vectorLayer = useRef<VectorLayer<VectorSource>>(new VectorLayer({ source: vectorSource.current }));
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -29,7 +38,7 @@ const MapComponent: React.FC = () => {
         new TileLayer({
           source: new OSM(),
         }),
-        vectorLayer,
+        vectorLayer.current,
       ],
       view: new View({
         center: fromLonLat([0, 0]),
@@ -46,7 +55,7 @@ const MapComponent: React.FC = () => {
       keepOpen: true,
     });
 
-    geocoder.on('addresschosen', (evt) => {
+    geocoder.on('addresschosen', (evt: any) => {
       const lonLat = evt.coordinate;
       map.getView().animate({ center: lonLat, zoom: 10 });
     });
@@ -54,17 +63,17 @@ const MapComponent: React.FC = () => {
     map.addControl(geocoder);
 
     const drawPoint = new Draw({
-      source: vectorSource,
+      source: vectorSource.current,
       type: 'Point',
     });
 
     const drawLine = new Draw({
-      source: vectorSource,
+      source: vectorSource.current,
       type: 'LineString',
     });
 
     const drawPolygon = new Draw({
-      source: vectorSource,
+      source: vectorSource.current,
       type: 'Polygon',
     });
 
@@ -80,18 +89,14 @@ const MapComponent: React.FC = () => {
   }, []);
 
   const toggleFullscreen = () => {
-    const mapContainer = mapRef.current;
-    if (mapContainer) {
-      mapContainer.classList.toggle('fullscreen-map');
-      setIsFullscreen(!isFullscreen);
-    }
+    setIsFullscreen(!isFullscreen);
   };
 
   const handleZoomIn = () => {
     if (mapInstance) {
       const view = mapInstance.getView();
       const currentZoom = view.getZoom();
-      view.setZoom(currentZoom + 1);
+      view.setZoom(currentZoom! + 1);
     }
   };
 
@@ -99,43 +104,48 @@ const MapComponent: React.FC = () => {
     if (mapInstance) {
       const view = mapInstance.getView();
       const currentZoom = view.getZoom();
-      view.setZoom(currentZoom - 1);
+      view.setZoom(currentZoom! - 1);
     }
   };
 
   const calculateMeasurement = () => {
-    const features = vectorSource.getFeatures();
-
+    const features = vectorSource.current.getFeatures(); // Use vectorSource.current to access the current value
+  
     if (features.length === 0) {
       alert('Please draw a feature to calculate measurements.');
       return;
     }
-
+  
     let totalMeasurement = 0;
-
+    let unit = '';
+  
     features.forEach((feature) => {
       const geometry = feature.getGeometry();
-      let measurement;
-      if (geometry.getType() === 'Polygon') {
-        // Calculate area for polygon features
-        measurement = geometry.getArea();
-      } else if (geometry.getType() === 'LineString') {
-        // Calculate length for line features
-        measurement = geometry.getLength();
+      if (geometry) {
+        if (geometry.getType() === 'Polygon') {
+          // Calculate area for polygon features
+          const area = getArea(geometry);
+          totalMeasurement += area;
+          unit = 'square meters';
+        } else if (geometry.getType() === 'LineString') {
+          // Calculate length for line features
+          const length = getLength(geometry);
+          totalMeasurement += length;
+          unit = 'meters';
+        }
       }
-      totalMeasurement += measurement;
     });
-
+  
     // Convert total measurement to appropriate unit
-    const unit = features[0].getGeometry().getType() === 'Polygon' ? 'square meters' : 'meters';
     const totalMeasurementFormatted = totalMeasurement.toLocaleString();
-
+  
     // Update state with the total measurement
     setDistance(totalMeasurement);
-
+  
     // Display the measurement in a pop-up message
     alert(`Total Measurement: ${totalMeasurementFormatted} ${unit}`);
   };
+  
 
   return (
     <div>
