@@ -5,21 +5,29 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import OSM from 'ol/source/OSM';
+import {getLength, getArea} from 'ol/sphere';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { fromLonLat } from 'ol/proj';
-import { Feature } from 'ol';
-import { Point, LineString, Polygon } from 'ol/geom';
 import { Draw } from 'ol/interaction';
 import './map1.css'; // Import the CSS file
 import Geocoder from 'ol-geocoder';
 
+interface AddressChosenEvent {
+  coordinate: [number, number];
+  // Add other properties that you expect to use from the event
+} 
+interface CurrentZoomEvent{ 
+  
+}
+
 const MapComponent: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(true); // Set to true by default
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(true);
   const [mapInstance, setMapInstance] = useState<Map | null>(null);
-  const vectorSource = new VectorSource();
-  const vectorLayer = new VectorLayer({ source: vectorSource });
+  const [distance, setDistance] = useState<number | null>(null);
+  const vectorSource = useRef<VectorSource>(new VectorSource());
+  const vectorLayer = useRef<VectorLayer<VectorSource>>(new VectorLayer({ source: vectorSource.current }));
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -30,7 +38,7 @@ const MapComponent: React.FC = () => {
         new TileLayer({
           source: new OSM(),
         }),
-        vectorLayer, // Add the vector layer to the map
+        vectorLayer.current,
       ],
       view: new View({
         center: fromLonLat([0, 0]),
@@ -38,7 +46,6 @@ const MapComponent: React.FC = () => {
       }),
     });
 
-    // Initialize geocoder
     const geocoder = new Geocoder('nominatim', {
       provider: 'osm',
       lang: 'en',
@@ -48,20 +55,31 @@ const MapComponent: React.FC = () => {
       keepOpen: true,
     });
 
-    geocoder.on('addresschosen', (evt) => {
+    geocoder.on('addresschosen', (evt: any) => {
       const lonLat = evt.coordinate;
       map.getView().animate({ center: lonLat, zoom: 10 });
     });
 
     map.addControl(geocoder);
 
-    // Add draw interactions for drawing features
-    const drawInteraction = new Draw({
-      source: vectorSource,
-      type: 'Point', // Default to point drawing
+    const drawPoint = new Draw({
+      source: vectorSource.current,
+      type: 'Point',
     });
 
-    map.addInteraction(drawInteraction);
+    const drawLine = new Draw({
+      source: vectorSource.current,
+      type: 'LineString',
+    });
+
+    const drawPolygon = new Draw({
+      source: vectorSource.current,
+      type: 'Polygon',
+    });
+
+    map.addInteraction(drawPoint);
+    map.addInteraction(drawLine);
+    map.addInteraction(drawPolygon);
 
     setMapInstance(map);
 
@@ -70,44 +88,78 @@ const MapComponent: React.FC = () => {
     };
   }, []);
 
-  // Function to toggle fullscreen
   const toggleFullscreen = () => {
-    const mapContainer = mapRef.current;
-    if (mapContainer) {
-      mapContainer.classList.toggle('fullscreen-map');
-      setIsFullscreen(!isFullscreen); // Update state to reflect fullscreen status
-    }
+    setIsFullscreen(!isFullscreen);
   };
 
-  // Function to handle zoom in
   const handleZoomIn = () => {
     if (mapInstance) {
       const view = mapInstance.getView();
       const currentZoom = view.getZoom();
-      view.setZoom(currentZoom + 1);
+      view.setZoom(currentZoom! + 1);
     }
   };
 
-  // Function to handle zoom out
   const handleZoomOut = () => {
     if (mapInstance) {
       const view = mapInstance.getView();
       const currentZoom = view.getZoom();
-      view.setZoom(currentZoom - 1);
+      view.setZoom(currentZoom! - 1);
     }
   };
 
+  const calculateMeasurement = () => {
+    const features = vectorSource.current.getFeatures(); // Use vectorSource.current to access the current value
+  
+    if (features.length === 0) {
+      alert('Please draw a feature to calculate measurements.');
+      return;
+    }
+  
+    let totalMeasurement = 0;
+    let unit = '';
+  
+    features.forEach((feature) => {
+      const geometry = feature.getGeometry();
+      if (geometry) {
+        if (geometry.getType() === 'Polygon') {
+          // Calculate area for polygon features
+          const area = getArea(geometry);
+          totalMeasurement += area;
+          unit = 'square meters';
+        } else if (geometry.getType() === 'LineString') {
+          // Calculate length for line features
+          const length = getLength(geometry);
+          totalMeasurement += length;
+          unit = 'meters';
+        }
+      }
+    });
+  
+    // Convert total measurement to appropriate unit
+    const totalMeasurementFormatted = totalMeasurement.toLocaleString();
+  
+    // Update state with the total measurement
+    setDistance(totalMeasurement);
+  
+    // Display the measurement in a pop-up message
+    alert(`Total Measurement: ${totalMeasurementFormatted} ${unit}`);
+  };
+  
+
   return (
     <div>
-      <div ref={mapRef} className={`map-container ${isFullscreen ? 'fullscreen-map' : ''}`} /> {/* Add fullscreen class conditionally */}
-      {/* Fullscreen button */}
+      <div ref={mapRef} className={`map-container ${isFullscreen ? 'fullscreen-map' : ''}`} />
       <div className="fullscreen-button" onClick={toggleFullscreen}>
         {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
       </div>
-      {/* Zoom buttons */}
       <div className="zoom-buttons">
         <button onClick={handleZoomIn}>+</button>
         <button onClick={handleZoomOut}>-</button>
+      </div>
+      <div>
+        {distance !== null && <p>Measurement: {distance.toLocaleString()} meters</p>}
+        <button onClick={calculateMeasurement}>Calculate Measurement</button>
       </div>
     </div>
   );
